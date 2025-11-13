@@ -1,0 +1,11 @@
+strict-labels: true
+label-schema:
+  author: text
+  contact: email
+
+# disable having to pin versions in install
+# runs.
+ignored:
+  - DL3008
+  - DL3018
+  - DL3013
