@@ -6,19 +6,13 @@ and refer to it throughout the development of your contribution.
 
 ## 1. Naming Conventions
 
-- **Variables:** Use camel-case with underscores (e.g. `myVariable`, `home`).
-- **Functions:** Use title-case (e.g. `MyFunction`, `Home`).
-- **Constants:** Use uppercase with underscores (e.g. `MY_CONSTANT`, `HOME`).
-- **Files:** Use lowercase with underscores (e.g. `my_file.go`, `home.go`).
+- Follow `cargo fmt` rules
 
 ## 2. Comments
 
 Comments should be written to explain **why** something is done,
 not **what** is done. Avoid comments for obvious code (e.g. `i++; // Increment i`),
 good code is self-documenting.
-
-The use of block comments (`/* */`) is preferred for explaining sections or
-complex logic, and single-line comments (`//`) are used for brief explanations.
 
 ## 3. Error Handling
 

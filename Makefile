@@ -34,140 +34,83 @@ all: build test
 ## help: print this help message
 .PHONY: help
 help:
-	@echo 'CTFx - A CTF hosting platform'
-	@echo ''
 	@echo 'Usage: make [target]'
 	@echo ''
+	@echo 'Run "make fmt" and "make lint" before committing code.'
+	@echo ''
 	@echo 'Commands:'
-	@sed -n 's/^## //p' $(MAKEFILE_LIST) | column -t -s ':' |  sed -e 's/^/ /'
+	@echo 'build  Builds the code.'
+	@echo 'test   Test the code.'
+	@echo 'deps   Install dependencies.'
+	@echo ''
+	@echo 'dev   Runs the whole infra in dev.'
+	@echo 'prod  Runs the whole infra.'
+	@echo ''
+	@echo 'fmt      Formats code.'
+	@echo 'fmt/ci   Checks formatting..'
+	@echo 'lint     Lints code.'
+	@echo 'lint/ci  Checks linting.'
 	@echo ''
 	@echo 'Extra:'
+	@echo 'docs  Runs docs.'
 	@sed -n 's/^### //p' $(MAKEFILE_LIST) | column -t -s ':' |  sed -e 's/^/ /'
 
 
 
 
-## install: Install dependencies
-.PHONY: install
-install:
-	go get ./...
+.PHONY: build
+build:
+	cargo build
 
-# =================================== DEVELOPMENT =================================== #
+.PHONY: test
+test:
+	cargo test
 
-## docs: Runs Documentation
+.PHONY: security
+security:
+	cargo install cargo-audit
+	cargo audit
+
+.PHONY: deps
+deps:
+	rustup component add clippy
+	rustup component add rustfmt
+
+
+
+
+.PHONY: dev
+dev:
+
+.PHONY: prod
+prod:
+
+
+
+
+.PHONY: fmt
+fmt:
+	cargo fmt
+
+.PHONY: fmt/ci
+fmt/ci:
+	cargo fmt --check
+
+.PHONY: lint
+lint:
+	cargo clippy --fix
+
+.PHONY: lint/ci
+lint/ci:
+	cargo clippy
+
+
+
+
 .PHONY: docs
 docs:
 	mkdocs serve -f www/mkdocs.yml -a 0.0.0.0:8000
 
-
-
-
-## build: Builds Go binary
-.PHONY: build
-build: build/$(CTFX) build/$(CTFXD) build/$(WEB) build/$(AGENT)
-
-.PHONY: build/$(CTFX)
-build/$(CTFX):
-	go build $(BUILD_FLAGS) -o $(BIN_DIR)/$(CTFX)$(EXT) ./ctfjx
-
-.PHONY: build/$(CTFXD)
-build/$(CTFXD):
-	 go build $(BUILD_FLAGS) -o $(BIN_DIR)/$(CTFXD)$(EXT) ./ctfjxd
-
-.PHONY: build/$(WEB)
-build/$(WEB):
-	go build $(BUILD_FLAGS) -o $(BIN_DIR)/$(WEB)$(EXT) ./ctfjx-web
-
-.PHONY: build/$(AGENT)
-build/$(AGENT):
-	go build $(BUILD_FLAGS) -o $(BIN_DIR)/$(AGENT)$(EXT) ./ctfjx-agent
-
-## build/docs: Builds documentation
-build/docs:
+.PHONY: docs/build
+docs/build:
 	mkdocs build -f www/mkdocs.yml
-
-### build/docker: Builds Docker image
-build/docker:
-	docker build -t $(WEB):$(TAG) -f Dockerfile .
-
-
-
-
-## test: Runs tests
-.PHONY: test
-test:
-	go mod tidy
-	go mod verify
-	go vet ./...
-	go test -race ./...
-
-
-
-
-## bench: Run benchmarks
-bench:
-	go test -v -bench=. -benchmem ./...
-
-
-
-
-# =================================== QUALITY ================================== #
-
-## lint: Lint code
-.PHONY: lint
-lint: lint/go lint/npm
-
-### lint/go: Lint Go code
-.PHONY: lint/go
-lint/go:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
-
-### lint/npm: Lint NPM code
-.PHONY: lint/npm
-lint/npm:
-	prettier --cache --check .
-
-
-
-## security: Run security checks
-.PHONY: security
-security:
-	go run github.com/securego/gosec/v2/cmd/gosec@latest -quiet ./...
-	go run github.com/go-critic/go-critic/cmd/gocritic@latest check -enableAll ./...
-	go run github.com/google/osv-scanner/cmd/osv-scanner@latest -r .
-
-
-
-
-## format: Format code
-.PHONY: format
-format: format/go format/npm
-
-### format/go: Format Go code
-.PHONY: format/go
-format/go:
-	go fmt ./...
-	go mod tidy -v
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
-
-### format/npm: Format NPM code
-.PHONY: format/npm
-format/npm:
-	prettier --cache --write .
-
-
-
-
-## tidy: Clean up code artifacts
-.PHONY: tidy
-tidy:
-	go clean ./...
-	$(RM_CMD) $(BIN_DIR)
-
-
-
-
-## clean: Remove node_modules
-.PHONY: clean
-clean: tidy
-	$(RM_CMD) node_modules
