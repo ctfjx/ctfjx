@@ -1,0 +1,227 @@
+syntax = "proto3";
+
+package ctfjx.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "ctfjx_proto/grpc;ctfjx_proto";
+option java_multiple_files = true;
+option java_package = "io.ctfjx.proto";
+option objc_class_prefix = "CTFJX";
+
+////////////////////////////////////////////////////////////////////////////////
+// Top-level service
+////////////////////////////////////////////////////////////////////////////////
+
+service ServiceCtfjx {
+  rpc Ping(PingRequest) returns (PingResponse);
+
+  rpc CreateChallenge(CreateChallengeRequest) returns (CreateChallengeResponse);
+  rpc GetChallenge(GetChallengeRequest) returns (Challenge);
+  rpc UpdateChallenge(UpdateChallengeRequest) returns (Challenge);
+  rpc DeleteChallenge(DeleteChallengeRequest) returns (google.protobuf.Empty);
+  rpc ListChallenges(ListChallengesRequest) returns (ListChallengesResponse);
+
+  rpc StartInstance(StartInstanceRequest) returns (StartInstanceResponse);
+  rpc StopInstance(StopInstanceRequest) returns (StopInstanceResponse);
+  rpc GetInstanceStatus(GetInstanceStatusRequest) returns (InstanceStatus);
+
+  rpc RegisterAgent(RegisterAgentRequest) returns (RegisterAgentResponse);
+  rpc AssignJob(AssignJobRequest) returns (AssignJobResponse);
+
+  rpc StreamEvents(StreamEventsRequest) returns (stream Event);
+  rpc AgentStream(stream AgentFrame) returns (stream AgentFrame);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Health
+////////////////////////////////////////////////////////////////////////////////
+
+message PingRequest {
+  string client = 1;
+}
+
+message PingResponse {
+  string message = 1;
+  google.protobuf.Timestamp server_time = 2;
+  string version = 3;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Challenge CRUD
+////////////////////////////////////////////////////////////////////////////////
+
+message Challenge {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string owner = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  string difficulty = 7;
+  repeated string tags = 8;
+  map<string, string> metadata = 9;
+}
+
+message CreateChallengeRequest {
+  Challenge challenge = 1;
+}
+
+message CreateChallengeResponse {
+  string id = 1;
+  string message = 2;
+}
+
+message GetChallengeRequest {
+  string id = 1;
+}
+
+message UpdateChallengeRequest {
+  Challenge challenge = 1;
+}
+
+message DeleteChallengeRequest {
+  string id = 1;
+}
+
+message ListChallengesRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string filter = 3;
+}
+
+message ListChallengesResponse {
+  repeated Challenge challenges = 1;
+  string next_page_token = 2;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Instance / provisioning
+////////////////////////////////////////////////////////////////////////////////
+
+message StartInstanceRequest {
+  string challenge_id = 1;
+  string owner = 2;
+  map<string, string> overrides = 3;
+  string agent_id = 4;
+}
+
+message StartInstanceResponse {
+  string instance_id = 1;
+  string node = 2;
+  string message = 3;
+  google.protobuf.Timestamp started_at = 4;
+}
+
+message StopInstanceRequest {
+  string instance_id = 1;
+  bool force = 2;
+}
+
+message StopInstanceResponse {
+  string instance_id = 1;
+  string message = 2;
+  google.protobuf.Timestamp stopped_at = 3;
+}
+
+message GetInstanceStatusRequest {
+  string instance_id = 1;
+}
+
+message InstanceStatus {
+  string instance_id = 1;
+  string challenge_id = 2;
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_STARTING = 1;
+    STATE_RUNNING = 2;
+    STATE_STOPPED = 3;
+    STATE_FAILED = 4;
+  }
+  State state = 3;
+  string node = 4;
+  string message = 5;
+  google.protobuf.Timestamp last_heartbeat = 6;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Agents & Jobs
+////////////////////////////////////////////////////////////////////////////////
+
+message RegisterAgentRequest {
+  string agent_id = 1;
+  string version = 2;
+  repeated string capabilities = 3;
+  map<string, string> metadata = 4;
+}
+
+message RegisterAgentResponse {
+  bool accepted = 1;
+  string message = 2;
+}
+
+message Job {
+  string job_id = 1;
+  string type = 2;
+  string payload_json = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message AssignJobRequest {
+  string agent_id = 1;
+  int32 max_jobs = 2;
+}
+
+message AssignJobResponse {
+  repeated Job jobs = 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Events / Logs / Streaming
+////////////////////////////////////////////////////////////////////////////////
+
+message StreamEventsRequest {
+  string instance_id = 1;
+  string challenge_id = 2;
+  string level = 3;
+}
+
+message Event {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_LOG = 1;
+    TYPE_METRIC = 2;
+    TYPE_STATE = 3;
+    TYPE_JOB = 4;
+  }
+  Type type = 1;
+  string source = 2;
+  string message = 3;
+  google.protobuf.Timestamp time = 4;
+  map<string, string> labels = 5;
+}
+
+message Heartbeat {
+  string agent_id = 1;
+  google.protobuf.Timestamp time = 2;
+  map<string, string> stats = 3;
+}
+
+message JobResult {
+  string job_id = 1;
+  bool success = 2;
+  string message = 3;
+  string result_json = 4;
+  google.protobuf.Timestamp finished_at = 5;
+}
+
+message AgentFrame {
+  oneof payload {
+    RegisterAgentRequest register = 1;
+    Job job = 2;
+    AssignJobResponse job_response = 3;
+    Heartbeat heartbeat = 4;
+    JobResult job_result = 5;
+  }
+}

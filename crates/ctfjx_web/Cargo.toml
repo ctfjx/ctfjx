@@ -1,0 +1,11 @@
+[package]
+name = "ctfjx_web"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "ctfjx-web"
+path = "src/main.rs"
+
+[dependencies]

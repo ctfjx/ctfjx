@@ -1,0 +1,8 @@
+[package]
+name = "ctfjxd"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "ctfjxd"
+path = "src/main.rs"
