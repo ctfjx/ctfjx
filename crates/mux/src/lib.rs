@@ -1,5 +1,6 @@
-pub mod consts;
-pub mod error;
-pub mod frame;
+pub(crate) mod consts;
+pub(crate) mod frame;
 
-pub use consts::*;
+pub(crate) use consts::*;
+
+pub mod error;
