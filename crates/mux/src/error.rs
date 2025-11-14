@@ -1,0 +1,14 @@
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("invalid cmd: {0}")]
+    InvalidCmd(u8),
+    #[error("invalid version: {0}")]
+    InvalidVersion(u8),
+    #[error("payload too large (>{})", u16::MAX)]
+    PayloadTooLong(),
+
+    #[error("io: {0}")]
+    Io(#[from] std::io::Error),
+}
