@@ -9,6 +9,11 @@ pub enum Error {
     #[error("payload too large (>{})", u16::MAX)]
     PayloadTooLong(),
 
+    #[error("message failed to send")]
+    MessageSendFail,
+    #[error("message took too long to send")]
+    MessageSendTooLong,
+
     #[error("io: {0}")]
     Io(#[from] std::io::Error),
 }
