@@ -50,3 +50,55 @@ impl Frame {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio_util::{
+        bytes::BytesMut,
+        codec::{Decoder, Encoder},
+    };
+
+    #[test]
+    fn encode_decode_roundtrip() {
+        let mut codec = FrameCodec;
+        let mut buf = BytesMut::new();
+
+        let frames = [
+            Frame::new_syn(1),
+            Frame::new_push(1, b"hello"),
+            Frame::new_push(2, b"world"),
+            Frame::new_fin(1),
+        ];
+
+        let mut decoded = Vec::new();
+
+        for frame in frames {
+            codec.encode(frame, &mut buf).unwrap();
+            while let Some(f) = codec.decode(&mut buf).unwrap() {
+                decoded.push(f);
+            }
+        }
+
+        assert_eq!(decoded.len(), 4);
+        assert_eq!(decoded[0].header.cmd, Cmd::Syn);
+        assert_eq!(decoded[1].header.cmd, Cmd::Push);
+        assert_eq!(decoded[1].payload, b"hello");
+        assert_eq!(decoded[2].payload, b"world");
+        assert_eq!(decoded[3].header.cmd, Cmd::Fin);
+    }
+
+    #[test]
+    fn decode_partial_frame_returns_none() {
+        let mut codec = FrameCodec;
+
+        let frame = Frame::new_push(1, b"hello");
+        let mut buf = BytesMut::new();
+        codec.encode(frame, &mut buf).unwrap();
+
+        buf.truncate(buf.len() - 1);
+
+        let result = codec.decode(&mut buf).unwrap();
+        assert!(result.is_none(), "Partial frame should return None");
+    }
+}
