@@ -9,7 +9,6 @@ fn main() {
         .extern_path(".google.protobuf.Timestamp", "::prost_wkt_types::Timestamp")
         .extern_path(".google.protobuf.Value", "::prost_wkt_types::Value")
         .extern_path(".google.protobuf.FieldMask", "::prost_wkt_types::FieldMask")
-        .extern_path(".mend_protos.common.v1", "crate::mend::common_v1")
         .compile_protos(&["proto/ctfjx.proto"], &["proto"])
         .expect("proto to compile");
 
