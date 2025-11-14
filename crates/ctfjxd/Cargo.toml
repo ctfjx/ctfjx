@@ -6,3 +6,6 @@ edition = "2024"
 [[bin]]
 name = "ctfjxd"
 path = "src/main.rs"
+
+[dependencies]
+tokio = { workspace = true }
