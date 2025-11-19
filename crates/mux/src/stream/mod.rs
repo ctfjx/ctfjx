@@ -17,6 +17,8 @@ pub(crate) mod allocate;
 pub(crate) use allocate::*;
 pub(crate) mod message;
 pub(crate) use message::*;
+pub(crate) mod manager;
+pub(crate) use manager::*;
 
 type FrameWriteFuture = Pin<Box<dyn Future<Output = Result<usize, Error>> + Send + Sync>>;
 
