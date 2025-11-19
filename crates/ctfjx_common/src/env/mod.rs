@@ -1,3 +1,41 @@
+//! Handles environment variable lookups.
+//! Supports loading from ENV, .env and secret files
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use validator::Validate;
+//! use crate::env::{ResolveEnv, lookup_env, EnvError};
+//!
+//! #[derive(Default, Debug, Validate)]
+//! struct AppConfig {
+//!     #[validate(length(min = 3))]
+//!     pub app_name: String,
+//!
+//!     #[validate(range(min = 1, max = 65535))]
+//!     pub port: u16,
+//! }
+//!
+//! impl ResolveEnv for AppConfig {
+//!     fn populate(&mut self) -> Result<(), EnvError> {
+//!         self.app_name = lookup_env("APP_NAME")?;
+//!         self.port = lookup_env("APP_PORT")?.parse().map_err(|_| {
+//!             EnvError::Invalid("APP_PORT", validator::ValidationErrors::new())
+//!         })?;
+//!         Ok(())
+//!     }
+//! }
+//!
+//! fn main() -> Result<(), EnvError> {
+//!     // Loads .env automatically if available,
+//!     // then resolves the struct, then runs validation.
+//!     let config = AppConfig::resolve_and_validate()?;
+//!
+//!     println!("Loaded config: {:?}", config);
+//!     Ok(())
+//! }
+//! ```
+
 use std::{env, fs};
 
 use dotenvy::dotenv;
