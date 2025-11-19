@@ -5,3 +5,4 @@ pub(crate) mod stream;
 pub(crate) use consts::*;
 
 pub mod error;
+pub use stream::Stream;
