@@ -14,6 +14,9 @@ pub enum Error {
     #[error("message took too long to send")]
     MessageSendTooLong,
 
+    #[error("exceeded max concurrent streams ({})", u16::MAX)]
+    StreamLimitExceeded,
+
     #[error("io: {0}")]
     Io(#[from] std::io::Error),
 }
