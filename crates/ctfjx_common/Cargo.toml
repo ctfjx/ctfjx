@@ -5,3 +5,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
+dotenvy = { workspace = true }
+thiserror = { workspace = true }
+validator = { workspace = true }
+tracing = { workspace = true }
