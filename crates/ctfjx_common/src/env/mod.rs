@@ -40,6 +40,7 @@ use std::{env, fs};
 
 use dotenvy::dotenv;
 use thiserror::Error;
+use tracing::debug;
 use validator::Validate;
 
 #[derive(Error, Debug)]
