@@ -24,3 +24,4 @@ tokio-util = { version = "0.7.17", features = ["codec"] }
 futures-util = { version = "0.3.31", features = ["sink"] }
 
 validator = { version = "0.20", features = ["derive"] }
+parking_lot = "0.12.5"

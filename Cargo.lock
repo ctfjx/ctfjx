@@ -149,9 +149,6 @@ dependencies = [
 [[package]]
 name = "ctfjx_web"
 version = "0.1.0"
-dependencies = [
- "ctfjx_common",
-]
 
 [[package]]
 name = "ctfjxd"
@@ -687,6 +684,7 @@ version = "0.1.0"
 dependencies = [
  "bitflags",
  "futures-util",
+ "parking_lot",
  "thiserror",
  "tokio",
  "tokio-util",
