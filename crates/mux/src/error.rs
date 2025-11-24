@@ -16,6 +16,15 @@ pub enum Error {
 
     #[error("exceeded max concurrent streams ({})", u16::MAX)]
     StreamLimitExceeded,
+    #[error("duplicate stream id {0}")]
+    DuplicateStream(u16),
+    #[error("stream not found {0}")]
+    StreamNotFound(u16),
+    #[error("send frame failed for stream {0}")]
+    SendFrameFailed(u16),
+
+    #[error("internal: ")]
+    Internal(String),
 
     #[error("io: {0}")]
     Io(#[from] std::io::Error),
