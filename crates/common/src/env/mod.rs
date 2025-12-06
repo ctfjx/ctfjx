@@ -5,7 +5,7 @@
 //!
 //! ```rust
 //! use validator::Validate;
-//! use crate::env::{ResolveEnv, lookup_env, EnvError};
+//! use ctfjx_common::env::{ResolveEnv, lookup_env, EnvError};
 //!
 //! #[derive(Default, Debug, Validate)]
 //! struct AppConfig {
@@ -18,10 +18,14 @@
 //!
 //! impl ResolveEnv for AppConfig {
 //!     fn populate(&mut self) -> Result<(), EnvError> {
-//!         self.app_name = lookup_env("APP_NAME")?;
-//!         self.port = lookup_env("APP_PORT")?.parse().map_err(|_| {
-//!             EnvError::Invalid("APP_PORT", validator::ValidationErrors::new())
-//!         })?;
+//!         // self.app_name = lookup_env("APP_NAME")?;
+//!         self.app_name = "name".to_string();
+//!
+//!         // self.port = lookup_env("APP_PORT")?.parse().map_err(|_| {
+//!         //     EnvError::Invalid("APP_PORT".to_string(), validator::ValidationErrors::new())
+//!         // })?;
+//!         self.port = 8080;
+//!
 //!         Ok(())
 //!     }
 //! }
