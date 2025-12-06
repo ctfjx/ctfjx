@@ -15,7 +15,7 @@ pub(crate) struct StreamManager {
 }
 
 pub(crate) struct StreamHandle {
-    frame_tx: mpsc::UnboundedSender<Frame>,
+    frame_tx: mpsc::Sender<Frame>,
     remote_fin_tx: Option<oneshot::Sender<()>>,
     remote_ack_tx: Option<oneshot::Sender<()>>,
 }
@@ -31,7 +31,7 @@ impl StreamManager {
     pub fn add_stream(
         &self,
         stream_id: StreamId,
-        frame_tx: mpsc::UnboundedSender<Frame>,
+        frame_tx: mpsc::Sender<Frame>,
         remote_fin_tx: oneshot::Sender<()>,
         remote_ack_tx: Option<oneshot::Sender<()>>,
     ) -> Result<(), Error> {
@@ -95,6 +95,7 @@ impl StreamManager {
                     .ok_or(Error::StreamNotFound(stream_id))?;
                 frame_tx
                     .send(frame)
+                    .await
                     .map_err(|_| Error::SendFrameFailed(stream_id))
             }
         }

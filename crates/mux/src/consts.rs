@@ -6,3 +6,5 @@ pub(crate) enum MultiplexerMode {
     Client,
     Server,
 }
+
+pub(crate) const FRAME_BUFFER_SIZE: usize = 1 << 10; // 1kB

@@ -40,7 +40,7 @@ pub struct Stream {
     stream_id: StreamId,
     perms: RwLock<StreamPerms>,
 
-    in_rx: mpsc::UnboundedReceiver<Frame>,
+    in_rx: mpsc::Receiver<Frame>,
     read_buf: Bytes,
 
     out_tx: mpsc::UnboundedSender<Message>,
@@ -56,7 +56,7 @@ pub struct Stream {
 impl Stream {
     pub(crate) fn new(
         stream_id: StreamId,
-        in_rx: mpsc::UnboundedReceiver<Frame>,
+        in_rx: mpsc::Receiver<Frame>,
         out_tx: mpsc::UnboundedSender<Message>,
         trigger_close_tx: mpsc::UnboundedSender<StreamId>,
         peer_close_rx: oneshot::Receiver<()>,
