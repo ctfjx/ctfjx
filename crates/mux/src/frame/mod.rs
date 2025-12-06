@@ -1,8 +1,8 @@
-pub mod header;
-pub use header::*;
+pub(crate) mod header;
+pub(crate) use header::*;
 
-pub mod codec;
-pub use codec::*;
+pub(crate) mod codec;
+pub(crate) use codec::*;
 
 use crate::{StreamId, VERSION_0};
 
