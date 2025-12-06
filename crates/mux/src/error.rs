@@ -14,6 +14,9 @@ pub enum Error {
     #[error("message took too long to send")]
     MessageSendTooLong,
 
+    #[error("connection closed")]
+    ConnectionClosed,
+
     #[error("exceeded max concurrent streams ({})", u16::MAX)]
     StreamLimitExceeded,
     #[error("duplicate stream id {0}")]
