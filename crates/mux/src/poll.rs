@@ -8,7 +8,7 @@ use tokio_util::codec::FramedWrite;
 
 use crate::{frame::FrameCodec, stream::Message};
 
-pub(crate) async fn dispatch_messages(
+pub(crate) async fn egress_message_dispatcher(
     mut msg_rx: mpsc::UnboundedReceiver<Message>,
     mut conn: impl AsyncWrite + Unpin,
     mut shutdown_rx: broadcast::Receiver<()>,
