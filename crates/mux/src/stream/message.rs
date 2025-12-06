@@ -8,9 +8,9 @@ use crate::{StreamId, error::Error, frame::Frame};
 
 /// Message is used to send out [`Cmd::Push`] frames
 pub(crate) struct Message {
-    frame: Frame,
+    pub(crate) frame: Frame,
     // marks when the message has been sent out or failed to be sent
-    done_tx: oneshot::Sender<Result<usize, Error>>,
+    pub(crate) done_tx: oneshot::Sender<Result<usize, Error>>,
 }
 
 impl Message {

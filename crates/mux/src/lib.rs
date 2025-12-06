@@ -1,6 +1,7 @@
 pub(crate) mod consts;
 pub(crate) mod frame;
 pub(crate) mod multiplexer;
+pub(crate) mod poll;
 pub(crate) mod stream;
 
 pub(crate) use consts::*;
