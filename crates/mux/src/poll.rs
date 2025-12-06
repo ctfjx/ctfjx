@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use futures_util::{SinkExt, StreamExt};
 use tokio::{
-    io::{AsyncWrite, AsyncWriteExt},
+    io::{AsyncRead, AsyncWrite, AsyncWriteExt},
     select,
     sync::{broadcast, mpsc},
 };
-use tokio_util::codec::FramedWrite;
+use tokio_util::codec::{FramedRead, FramedWrite};
 
 use crate::{
     StreamId,
@@ -43,6 +43,35 @@ pub(crate) async fn egress_message_dispatcher(
     }
 
     let _ = conn.shutdown().await;
+}
+
+pub(crate) async fn ingress_frame_dispatcher(
+    mut conn: impl AsyncRead + Unpin,
+    stream_manager: Arc<StreamManager>,
+    mut shutdown_rx: broadcast::Receiver<()>,
+) {
+    let mut r = FramedRead::new(&mut conn, FrameCodec);
+    loop {
+        select! {
+            frame = r.next() => {
+                match frame {
+                    Some(Ok(frame)) => {
+                        let _ = stream_manager.dispatch_frame(frame).await;
+                    }
+                    None => {
+                        return;
+                    }
+                    Some(Err(_)) => {
+                        return;
+                    }
+                }
+            }
+
+            _ = shutdown_rx.recv() => {
+                return;
+            }
+        }
+    }
 }
 
 pub(crate) async fn stream_close_handle(
