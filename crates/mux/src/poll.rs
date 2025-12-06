@@ -1,4 +1,6 @@
-use futures_util::SinkExt;
+use std::sync::Arc;
+
+use futures_util::{SinkExt, StreamExt};
 use tokio::{
     io::{AsyncWrite, AsyncWriteExt},
     select,
@@ -6,7 +8,11 @@ use tokio::{
 };
 use tokio_util::codec::FramedWrite;
 
-use crate::{frame::FrameCodec, stream::Message};
+use crate::{
+    StreamId,
+    frame::FrameCodec,
+    stream::{Message, StreamIdAllocator, StreamManager},
+};
 
 pub(crate) async fn egress_message_dispatcher(
     mut msg_rx: mpsc::UnboundedReceiver<Message>,
@@ -37,4 +43,25 @@ pub(crate) async fn egress_message_dispatcher(
     }
 
     let _ = conn.shutdown().await;
+}
+
+pub(crate) async fn stream_close_handle(
+    mut close_rx: mpsc::UnboundedReceiver<StreamId>,
+    stream_manager: Arc<StreamManager>,
+    id_authority: Arc<StreamIdAllocator>,
+    mut shutdown_rx: broadcast::Receiver<()>,
+) {
+    loop {
+        select! {
+            Some(stream_id) = close_rx.recv() => {
+                if stream_manager.remove_stream(stream_id).is_ok() {
+                    id_authority.free(stream_id);
+                }
+            }
+
+            _ = shutdown_rx.recv() => {
+                return;
+            }
+        }
+    }
 }
