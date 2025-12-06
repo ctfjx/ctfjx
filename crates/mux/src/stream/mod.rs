@@ -9,7 +9,7 @@ use std::{
 };
 use tokio::{
     io::{AsyncRead, AsyncWrite, ReadBuf},
-    sync::{mpsc, oneshot},
+    sync::{broadcast, mpsc, oneshot},
 };
 use tokio_util::bytes::{Buf, Bytes};
 
@@ -46,6 +46,8 @@ pub struct Stream {
     out_tx: mpsc::UnboundedSender<Message>,
     current_write_future: Option<FrameWriteFuture>,
 
+    // for when parent multiplexer closes
+    shutdown_rx: broadcast::Receiver<()>,
     // for stream to internally send out when we loose rw perms
     trigger_close_tx: mpsc::UnboundedSender<StreamId>,
     // listen into when peer sends FIN
@@ -58,6 +60,7 @@ impl Stream {
         stream_id: StreamId,
         in_rx: mpsc::Receiver<Frame>,
         out_tx: mpsc::UnboundedSender<Message>,
+        shutdown_rx: broadcast::Receiver<()>,
         trigger_close_tx: mpsc::UnboundedSender<StreamId>,
         peer_close_rx: oneshot::Receiver<()>,
     ) -> Self {
@@ -68,6 +71,7 @@ impl Stream {
             current_write_future: None,
             in_rx,
             out_tx,
+            shutdown_rx,
             trigger_close_tx,
             peer_close_rx,
             close_once: OnceLock::new(),
@@ -141,6 +145,16 @@ impl AsyncRead for Stream {
                         }
                         Poll::Pending => (),
                     }
+                    match self_mut.shutdown_rx.try_recv() {
+                        Ok(_)
+                        | Err(broadcast::error::TryRecvError::Closed)
+                        | Err(broadcast::error::TryRecvError::Lagged(_)) => {
+                            self_mut.deny_perm(StreamPerms::R);
+                            return Poll::Ready(Ok(()));
+                        }
+                        _ => (),
+                    }
+
                     return Poll::Pending;
                 }
             }
