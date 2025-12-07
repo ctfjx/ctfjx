@@ -15,9 +15,6 @@ defaults:
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-
 jobs:
   changed-files:
     name: Changed Files
@@ -42,15 +39,9 @@ jobs:
 
             test-source:
               - *common
-              - ctfjx/**
-              - ctfjx-agent/**
-              - ctfjx-web/**
-              - ctfjxd/**
-              - version/**
-              - internal/**
-              - pkg/**
-              - go.*
-              - '*.go'
+              - crates/**
+              - Cargo.lock
+              - Cargo.toml
 
   source:
     name: Test CTFjx
@@ -62,19 +53,37 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: stable
-
-      - name: Cache
+      - name: Caching dependencies
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/go-build
-            /go/pkg/mod
-          key: go-${{ runner.os }}-${{ hashFiles('go.sum') }}
-          restore-keys: go-${{ runner.os }}
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            target
+          key: rust-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}
+          restore-keys: |
+            rust-${{ runner.os }}
+
+      - name: Setup Rust
+        run: |
+          rustup show active-toolchain || (rustup update)
+
+      - name: Get protoc version
+        id: protoc_version
+        run: echo "version=$(apt-cache show protobuf-compiler | grep -m1 'Version' | awk '{print $2}')" >> $GITHUB_ENV
+
+      - name: Cache protoc
+        uses: actions/cache@v4
+        with:
+          path: /usr/bin/protoc
+          key: protoc-${{ runner.os }}-${{ env.version }}
+
+      - name: Install protoc
+        run: |
+          if ! command -v protoc &> /dev/null; then
+            sudo apt-get install -y protobuf-compiler
+          fi
 
       - name: Test
         run: |
@@ -82,7 +91,11 @@ jobs:
 
       - name: Lint
         run: |
-          make lint/go
+          make lint/ci
+
+      - name: Format
+        run: |
+          make fmt/ci
 
       - name: Security
         continue-on-error: true

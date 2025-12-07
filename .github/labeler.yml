@@ -12,3 +12,22 @@ kind/test:
 kind/ci:
   - changed-files:
       - any-glob-to-any-file: [.github/workflows/**]
+
+scope/ci:
+  - changed-files:
+      - any-glob-to-any-file: [crates/ctfjx/**]
+scope/common:
+  - changed-files:
+      - any-glob-to-any-file: [crates/ctfjx_common/**]
+scope/proto:
+  - changed-files:
+      - any-glob-to-any-file: [crates/ctfjx_proto/**]
+scope/daemon:
+  - changed-files:
+      - any-glob-to-any-file: [crates/ctfjxd/**]
+scope/web:
+  - changed-files:
+      - any-glob-to-any-file: [crates/ctfjx_web/**]
+scope/infra:
+  - changed-files:
+      - any-glob-to-any-file: [infra/**]

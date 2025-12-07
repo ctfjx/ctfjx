@@ -5,9 +5,8 @@ By contributing to CTFjx, you agree to abide by our
 
 ## Prerequisites
 
-- [Go 1.24+][Go install]
+- [Rust][]
 - [GNU/Make][]
-- [Prettier][]
 - [Python 3.13+][Python] (docs)
 
 ## Building
@@ -15,7 +14,7 @@ By contributing to CTFjx, you agree to abide by our
 You can build ctfjx with [GNU/Make][],
 simply run the following commands:
 
-### Go
+### Rust
 
 ```sh
 make build
@@ -30,7 +29,7 @@ make build/docker
 ### Docs
 
 ```sh
-make build/docs
+make docs/build
 ```
 
 ## Testing
@@ -40,6 +39,7 @@ as well as check for vulnerabilities.
 
 ```sh
 make test
+make security
 ```
 
 ### Docs
@@ -85,9 +85,8 @@ resolve your issue.
 You can consider sponsoring CTFjx.
 See [this page](https://ctfjx.ngjx.org/sponsors) for more details.
 
-[Go install]: https://go.dev/doc/install
 [GNU/Make]: https://www.gnu.org/software/make/#download
-[Prettier]: https://prettier.io/
+[Rust]: https://rust-lang.org/
 [Python]: https://www.python.org
 [Conventional commits]: https://www.conventionalcommits.org
 [SemVer]: https://semver.org

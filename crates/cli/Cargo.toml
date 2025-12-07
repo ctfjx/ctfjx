@@ -1,0 +1,14 @@
+[package]
+name = "ctfjx"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "ctfjx"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ctfjx"
+path = "src/main.rs"
+
+[dependencies]

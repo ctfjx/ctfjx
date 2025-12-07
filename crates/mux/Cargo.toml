@@ -1,0 +1,20 @@
+[package]
+name = "mux"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "mux"
+path = "src/lib.rs"
+
+[dependencies]
+thiserror = { workspace = true }
+paste = { workspace = true }
+
+bitflags = { workspace = true }
+
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+futures-util = { workspace = true }
+parking_lot = { workspace = true }
