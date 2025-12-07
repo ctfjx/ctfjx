@@ -1,5 +1,4 @@
 use tokio::{
-    runtime,
     sync::{mpsc, oneshot},
     time::{Duration, timeout},
 };
@@ -30,6 +29,13 @@ async fn send_frame(tx: mpsc::UnboundedSender<Message>, frame: Frame) -> Result<
         .map_err(|_| Error::MessageSendFail)?
 }
 
+fn send_frame_sync(tx: mpsc::UnboundedSender<Message>, frame: Frame) -> Result<(), Error> {
+    let (msg, _) = Message::new(frame);
+    tx.send(msg)
+        .map_err(|_| Error::MessageSendFail)
+        .map_err(|_| Error::MessageSendFail)
+}
+
 macro_rules! sender {
     ($frame_t:ident) => {
         paste::paste! {
@@ -45,9 +51,8 @@ macro_rules! sender {
             pub(crate) fn [<send_ $frame_t _sync>](
                 tx: mpsc::UnboundedSender<Message>,
                 stream_id: StreamId,
-            ) -> Result<usize, Error> {
-                tokio::runtime::Handle::current()
-                    .block_on(send_frame(tx, Frame::[<new_ $frame_t>](stream_id)))
+            ) -> Result<(), Error> {
+                send_frame_sync(tx, Frame::[<new_ $frame_t>](stream_id))
             }
         }
     };
@@ -71,12 +76,11 @@ macro_rules! sender {
                 tx: mpsc::UnboundedSender<Message>,
                 stream_id: StreamId,
                 $( $arg_name : $arg_ty ),+
-            ) -> Result<usize, Error> {
-                tokio::runtime::Handle::current()
-                    .block_on(send_frame(
-                        tx,
-                        Frame::[<new_ $frame_t>](stream_id, $( $arg_name ),+)
-                    ))
+            ) -> Result<(), Error> {
+                send_frame_sync(
+                    tx,
+                    Frame::[<new_ $frame_t>](stream_id, $( $arg_name ),+)
+                )
             }
         }
     };
