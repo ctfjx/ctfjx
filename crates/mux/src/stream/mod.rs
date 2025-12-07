@@ -9,6 +9,7 @@ use std::{
 };
 use tokio::{
     io::{AsyncRead, AsyncWrite, ReadBuf},
+    select,
     sync::{broadcast, mpsc, oneshot},
 };
 use tokio_util::bytes::{Buf, Bytes};
@@ -52,6 +53,7 @@ pub struct Stream {
     trigger_close_tx: mpsc::UnboundedSender<StreamId>,
     // listen into when peer sends FIN
     peer_close_rx: oneshot::Receiver<()>,
+    free_id_tx: mpsc::UnboundedSender<StreamId>,
     close_once: OnceLock<()>,
 }
 
@@ -63,7 +65,19 @@ impl Stream {
         shutdown_rx: broadcast::Receiver<()>,
         trigger_close_tx: mpsc::UnboundedSender<StreamId>,
         peer_close_rx: oneshot::Receiver<()>,
+        free_id_tx: mpsc::UnboundedSender<StreamId>,
     ) -> Self {
+        let shutdown_rx2 = shutdown_rx.clone();
+        let peer_close_rx2 = peer_close_rx.subscribe();
+        tokio::spawn(async move {
+            loop {
+                select! {
+                    _ = peer_close_rx2.recv() => break,
+                    _ = shutdown_rx2.recv() => break,
+                }
+            }
+        });
+
         Self {
             stream_id,
             perms: RwLock::new(StreamPerms::RW),
@@ -74,12 +88,14 @@ impl Stream {
             shutdown_rx,
             trigger_close_tx,
             peer_close_rx,
+            free_id_tx,
             close_once: OnceLock::new(),
         }
     }
 
     // Should be used to send out a FIN
     pub fn close(&self) {
+        println!("close() {}", self.stream_id);
         self.close_once.get_or_init(|| {
             self.deny_perm(StreamPerms::W);
             let _ = message::send_fin_sync(self.out_tx.clone(), self.stream_id);
@@ -98,6 +114,7 @@ impl Stream {
 
 impl Drop for Stream {
     fn drop(&mut self) {
+        println!("drop() {}", self.stream_id);
         if self.perms.read().contains(StreamPerms::W) {
             let _ = message::send_fin_sync(self.out_tx.clone(), self.stream_id);
         }
@@ -140,7 +157,10 @@ impl AsyncRead for Stream {
                 Poll::Pending => {
                     match Pin::new(&mut self_mut.peer_close_rx).poll(cx) {
                         Poll::Ready(_) => {
+                            println!("peer closed {}!", self_mut.stream_id);
                             self_mut.deny_perm(StreamPerms::R);
+                            let _ =
+                                message::send_ack_sync(self_mut.out_tx.clone(), self_mut.stream_id);
                             return Poll::Ready(Ok(()));
                         }
                         Poll::Pending => (),

@@ -29,6 +29,7 @@ impl StreamIdAllocator {
 
     pub(crate) fn alloc(&self) -> Result<StreamId, Error> {
         if let Some(id) = self.free_list.lock().unwrap().pop_front() {
+            println!("alloc from free list {id}");
             return Ok(id);
         }
 
@@ -37,7 +38,9 @@ impl StreamIdAllocator {
             return Err(Error::StreamLimitExceeded);
         }
 
-        Ok(self.curr.fetch_add(2, Ordering::Relaxed))
+        let id = self.curr.fetch_add(2, Ordering::Relaxed);
+        println!("alloc from inc {id}");
+        Ok(id)
     }
 
     pub(crate) fn free(&self, stream_id: StreamId) {
@@ -48,6 +51,7 @@ impl StreamIdAllocator {
         }
 
         let mut free_list = self.free_list.lock().unwrap();
+        println!("freed {stream_id}");
         free_list.push_back(stream_id);
     }
 }

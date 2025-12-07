@@ -76,16 +76,20 @@ pub(crate) async fn ingress_frame_dispatcher(
 
 pub(crate) async fn stream_close_handle(
     mut close_rx: mpsc::UnboundedReceiver<StreamId>,
+    mut free_id_rx: mpsc::UnboundedReceiver<StreamId>,
     stream_manager: Arc<StreamManager>,
     id_authority: Arc<StreamIdAllocator>,
     mut shutdown_rx: broadcast::Receiver<()>,
 ) {
     loop {
         select! {
+            Some(stream_id) = free_id_rx.recv() => {
+                println!("stream close handle id {stream_id}");
+                id_authority.free(stream_id);
+            }
+
             Some(stream_id) = close_rx.recv() => {
-                if stream_manager.remove_stream(stream_id).is_ok() {
-                    id_authority.free(stream_id);
-                }
+                let _ =  stream_manager.soft_remove_stream(stream_id);
             }
 
             _ = shutdown_rx.recv() => {

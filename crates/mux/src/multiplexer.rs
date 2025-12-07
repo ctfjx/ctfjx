@@ -31,6 +31,7 @@ pub struct Multiplexer<T: AsyncRead + AsyncWrite + Send + Unpin + 'static> {
 
     msg_tx: mpsc::UnboundedSender<Message>,
     close_tx: mpsc::UnboundedSender<StreamId>,
+    free_id_tx: mpsc::UnboundedSender<StreamId>,
     _phantom: PhantomData<T>,
 }
 
@@ -40,6 +41,8 @@ impl<T: AsyncRead + AsyncWrite + Send + Unpin + 'static> Multiplexer<T> {
         let (msg_tx, msg_rx) = mpsc::unbounded_channel();
         let (close_tx, close_rx) = mpsc::unbounded_channel();
         let (stream_creation_tx, stream_creation_rx) = mpsc::unbounded_channel();
+        let (free_id_tx, free_id_rx) = mpsc::unbounded_channel();
+        let (dummy_tx, _) = mpsc::unbounded_channel();
 
         let (shutdown_tx, shutdown_rx) = broadcast::channel(1);
         let shutdown_rx2 = shutdown_tx.subscribe();
@@ -47,13 +50,14 @@ impl<T: AsyncRead + AsyncWrite + Send + Unpin + 'static> Multiplexer<T> {
 
         let session = Self {
             id_ca: Arc::new(StreamIdAllocator::new(&mode)),
-            stream_manager: Arc::new(StreamManager::new(stream_creation_tx)),
+            stream_manager: Arc::new(StreamManager::new(stream_creation_tx, free_id_tx)),
             create_stream_rx: tokio::sync::Mutex::new(stream_creation_rx),
             shutdown_tx,
             shutdown_once: Once::new(),
             is_shutdown: AtomicBool::new(false),
             msg_tx,
             close_tx,
+            free_id_tx: dummy_tx,
             _phantom: PhantomData,
         };
 
@@ -69,6 +73,7 @@ impl<T: AsyncRead + AsyncWrite + Send + Unpin + 'static> Multiplexer<T> {
         ));
         tokio::spawn(poll::stream_close_handle(
             close_rx,
+            free_id_rx,
             session.stream_manager.clone(),
             session.id_ca.clone(),
             shutdown_rx3,
@@ -91,6 +96,7 @@ impl<T: AsyncRead + AsyncWrite + Send + Unpin + 'static> Multiplexer<T> {
 
         let close_tx = self.close_tx.clone();
         let msg_tx = self.msg_tx.clone();
+        let free_id_tx = self.free_id_tx.clone();
         let shutdown_rx = self.shutdown_tx.subscribe();
         let stream_id = self.id_ca.alloc()?;
         let (in_tx, in_rx) = mpsc::channel(consts::FRAME_BUFFER_SIZE);
@@ -103,16 +109,19 @@ impl<T: AsyncRead + AsyncWrite + Send + Unpin + 'static> Multiplexer<T> {
             shutdown_rx,
             close_tx,
             peer_close_rx,
+            free_id_tx,
         );
 
         let (peer_ack_tx, peer_ack_rx) = oneshot::channel();
         self.stream_manager
             .add_stream(stream_id, in_tx, peer_close_tx, Some(peer_ack_tx))?;
 
+        println!("opening stream {}", stream_id);
         stream::send_syn(msg_tx, stream_id).await?;
         peer_ack_rx
             .await
             .map_err(|_| Error::Internal("peer ack not found".to_string()))?;
+        println!("opened stream {}", stream_id);
 
         Ok(stream)
     }
@@ -130,6 +139,7 @@ impl<T: AsyncRead + AsyncWrite + Send + Unpin + 'static> Multiplexer<T> {
         let shutdown_rx = self.shutdown_tx.subscribe();
         let close_tx = self.close_tx.clone();
         let msg_tx = self.msg_tx.clone();
+        let free_id_tx = self.free_id_tx.clone();
         let (frame_tx, frame_rx) = mpsc::channel(consts::FRAME_BUFFER_SIZE);
         let (peer_close_tx, peer_close_rx) = oneshot::channel();
 
@@ -140,12 +150,18 @@ impl<T: AsyncRead + AsyncWrite + Send + Unpin + 'static> Multiplexer<T> {
             shutdown_rx,
             close_tx,
             peer_close_rx,
+            free_id_tx,
         );
         self.stream_manager
             .add_stream(stream_id, frame_tx, peer_close_tx, None)?;
         stream::send_ack(self.msg_tx.clone(), stream_id).await?;
+        println!("accepted stream {}", stream_id);
 
         Ok(stream)
+    }
+
+    pub fn is_open(&self) -> bool {
+        !self.is_shutdown.load(Ordering::SeqCst)
     }
 
     /// Close the session
