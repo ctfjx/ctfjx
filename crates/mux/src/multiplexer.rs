@@ -16,9 +16,7 @@ use crate::{
     MultiplexerMode, Stream, StreamId, consts,
     error::Error,
     poll,
-    stream::{
-        self, EVEN_STREAM_ID_START, Message, ODD_STREAM_ID_START, StreamIdAllocator, StreamManager,
-    },
+    stream::{self, Message, StreamIdAllocator, StreamManager},
 };
 
 pub struct Multiplexer<T: AsyncRead + AsyncWrite + Send + Unpin + 'static> {
@@ -48,10 +46,7 @@ impl<T: AsyncRead + AsyncWrite + Send + Unpin + 'static> Multiplexer<T> {
         let shutdown_rx3 = shutdown_tx.subscribe();
 
         let session = Self {
-            id_ca: Arc::new(StreamIdAllocator::new(match mode {
-                MultiplexerMode::Client => ODD_STREAM_ID_START,
-                MultiplexerMode::Server => EVEN_STREAM_ID_START,
-            })),
+            id_ca: Arc::new(StreamIdAllocator::new(&mode)),
             stream_manager: Arc::new(StreamManager::new(stream_creation_tx)),
             create_stream_rx: tokio::sync::Mutex::new(stream_creation_rx),
             shutdown_tx,
