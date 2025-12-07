@@ -82,7 +82,7 @@ impl Stream {
     pub fn close(&self) {
         self.close_once.get_or_init(|| {
             self.deny_perm(StreamPerms::W);
-            let _ = message::send_fin(self.out_tx.clone(), self.stream_id);
+            let _ = message::send_fin_sync(self.out_tx.clone(), self.stream_id);
         });
     }
 
@@ -99,7 +99,7 @@ impl Stream {
 impl Drop for Stream {
     fn drop(&mut self) {
         if self.perms.read().contains(StreamPerms::W) {
-            let _ = message::send_fin(self.out_tx.clone(), self.stream_id);
+            let _ = message::send_fin_sync(self.out_tx.clone(), self.stream_id);
         }
         self.deny_perm(StreamPerms::RW);
     }

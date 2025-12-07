@@ -1,7 +1,7 @@
 use tokio::{
+    runtime,
     sync::{mpsc, oneshot},
-    time::Duration,
-    time::timeout,
+    time::{Duration, timeout},
 };
 
 use crate::{StreamId, error::Error, frame::Frame};
@@ -30,33 +30,59 @@ async fn send_frame(tx: mpsc::UnboundedSender<Message>, frame: Frame) -> Result<
         .map_err(|_| Error::MessageSendFail)?
 }
 
-pub(crate) async fn send_syn(
-    tx: mpsc::UnboundedSender<Message>,
-    stream_id: StreamId,
-) -> Result<usize, Error> {
-    send_frame(tx, Frame::new_syn(stream_id)).await
-}
-pub(crate) async fn send_ack(
-    tx: mpsc::UnboundedSender<Message>,
-    stream_id: StreamId,
-) -> Result<usize, Error> {
-    send_frame(tx, Frame::new_ack(stream_id)).await
-}
-pub(crate) fn send_fin(
-    tx: mpsc::UnboundedSender<Message>,
-    stream_id: StreamId,
-) -> Result<(), Error> {
-    let frame = Frame::new_fin(stream_id);
-    let (msg, _) = Message::new(frame);
+macro_rules! sender {
+    ($frame_t:ident) => {
+        paste::paste! {
+            #[allow(unused)]
+            pub(crate) async fn [<send_ $frame_t>](
+                tx: mpsc::UnboundedSender<Message>,
+                stream_id: StreamId,
+            ) -> Result<usize, Error> {
+                send_frame(tx, Frame::[<new_ $frame_t>](stream_id)).await
+            }
 
-    tx.send(msg)
-        .map_err(|_| Error::MessageSendFail)
-        .map_err(|_| Error::MessageSendFail)
+            #[allow(unused)]
+            pub(crate) fn [<send_ $frame_t _sync>](
+                tx: mpsc::UnboundedSender<Message>,
+                stream_id: StreamId,
+            ) -> Result<usize, Error> {
+                tokio::runtime::Handle::current()
+                    .block_on(send_frame(tx, Frame::[<new_ $frame_t>](stream_id)))
+            }
+        }
+    };
+
+    ($frame_t:ident, $( $arg_name:ident : $arg_ty:ty ),+ ) => {
+        paste::paste! {
+            #[allow(unused)]
+            pub(crate) async fn [<send_ $frame_t>](
+                tx: mpsc::UnboundedSender<Message>,
+                stream_id: StreamId,
+                $( $arg_name : $arg_ty ),+
+            ) -> Result<usize, Error> {
+                send_frame(
+                    tx,
+                    Frame::[<new_ $frame_t>](stream_id, $( $arg_name ),+)
+                ).await
+            }
+
+            #[allow(unused)]
+            pub(crate) fn [<send_ $frame_t _sync>](
+                tx: mpsc::UnboundedSender<Message>,
+                stream_id: StreamId,
+                $( $arg_name : $arg_ty ),+
+            ) -> Result<usize, Error> {
+                tokio::runtime::Handle::current()
+                    .block_on(send_frame(
+                        tx,
+                        Frame::[<new_ $frame_t>](stream_id, $( $arg_name ),+)
+                    ))
+            }
+        }
+    };
 }
-pub(crate) async fn send_push(
-    tx: mpsc::UnboundedSender<Message>,
-    stream_id: StreamId,
-    data: &[u8],
-) -> Result<usize, Error> {
-    send_frame(tx, Frame::new_push(stream_id, data)).await
-}
+
+sender!(syn);
+sender!(fin);
+sender!(ack);
+sender!(push, data: &[u8]);

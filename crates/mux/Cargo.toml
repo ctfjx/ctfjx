@@ -10,6 +10,7 @@ path = "src/lib.rs"
 
 [dependencies]
 thiserror = { workspace = true }
+paste = { workspace = true }
 
 bitflags = { workspace = true }
 
