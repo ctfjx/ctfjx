@@ -26,3 +26,5 @@ futures-util = { version = "0.3.31", features = ["sink"] }
 
 validator = { version = "0.20", features = ["derive"] }
 parking_lot = "0.12.5"
+
+rcgen = "0.14.5"
